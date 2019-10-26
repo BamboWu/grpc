@@ -54,3 +54,10 @@
 [submodule "third_party/upb"]
 	path = third_party/upb
 	url = https://github.com/protocolbuffers/upb.git
+[submodule "third_party/dpdk"]
+	path = third_party/dpdk
+	url = https://github.com/DPDK/dpdk.git
+    branch = v17.11
+[submodule "third_party/tas"]
+	path = third_party/tas
+	url = https://github.com/tcp-acceleration-service/tas.git
