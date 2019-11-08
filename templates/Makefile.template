@@ -1302,7 +1302,7 @@
   $(OBJDIR)/$(CONFIG)/%.o : $(GENDIR)/%.pb.cc
   	$(E) "[CXX]     Compiling $<"
   	$(Q) mkdir -p `dirname $@`
-  	$(Q) $(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MF $(addsuffix .dep, $(basename $@)) -c -o $@ $<
+  	$(Q) $(CXX) $(CPPFLAGS) $(CXXFLAGS) ${defaults.protobuf.CXXFLAGS} -MMD -MF $(addsuffix .dep, $(basename $@)) -c -o $@ $<
 
   $(OBJDIR)/$(CONFIG)/src/compiler/%.o : src/compiler/%.cc
   	$(E) "[HOSTCXX] Compiling $<"
@@ -1318,6 +1318,11 @@
   	$(E) "[CXX]     Compiling $<"
   	$(Q) mkdir -p `dirname $@`
   	$(Q) $(CXX) $(CPPFLAGS) $(CXXFLAGS) $(COREFLAGS) -MMD -MF $(addsuffix .dep, $(basename $@)) -c -o $@ $<
+
+  $(OBJDIR)/$(CONFIG)/%.pb.o : %.pb.cc
+  	$(E) "[CXX]     Compiling $<"
+  	$(Q) mkdir -p `dirname $@`
+  	$(Q) $(CXX) $(CPPFLAGS) $(CXXFLAGS) ${defaults.protobuf.CXXFLAGS} -MMD -MF $(addsuffix .dep, $(basename $@)) -c -o $@ $<
 
   $(OBJDIR)/$(CONFIG)/%.o : %.cc
   	$(E) "[CXX]     Compiling $<"

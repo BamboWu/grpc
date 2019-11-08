@@ -6183,9 +6183,11 @@ defaults:
   global:
     COREFLAGS: -fno-rtti -fno-exceptions
     CPPFLAGS: -g -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
-      -Wno-deprecated-declarations -Ithird_party/nanopb -DPB_FIELD_32BIT
+      -Wno-deprecated-declarations -Wno-strict-aliasing -Ithird_party/nanopb -DPB_FIELD_32BIT
     CXXFLAGS: -Wnon-virtual-dtor
     LDFLAGS: -g
+  protobuf:
+    CXXFLAGS: -Wno-unused-variable
   upb:
     CFLAGS: -Wno-sign-conversion -Wno-shadow -Wno-conversion -Wno-implicit-fallthrough
       -Wno-sign-compare -Wno-missing-field-initializers
