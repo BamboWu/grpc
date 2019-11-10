@@ -1155,6 +1155,7 @@ add_library(grpc
   src/core/lib/transport/transport_op_string.cc
   src/core/lib/uri/uri_parser.cc
   src/core/lib/debug/trace.cc
+  src/core/ext/transport/tas/tas.cc
   src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc
   src/core/ext/transport/chttp2/transport/bin_decoder.cc
   src/core/ext/transport/chttp2/transport/bin_encoder.cc
@@ -1376,6 +1377,8 @@ target_link_libraries(grpc
   ${_gRPC_ADDRESS_SORTING_LIBRARIES}
   ${_gRPC_ALLTARGETS_LIBRARIES}
   gpr
+  tas
+  tas_sockets
 )
 if (_gRPC_PLATFORM_IOS OR _gRPC_PLATFORM_MAC)
   target_link_libraries(grpc "-framework CoreFoundation")
@@ -5273,6 +5276,149 @@ if (gRPC_INSTALL)
 endif()
 
 endif (gRPC_BUILD_CSHARP_EXT)
+if (gRPC_BUILD_TESTS)
+
+add_library(tas
+  third_party/tas/lib/tas/conn.c
+  third_party/tas/lib/tas/connect.c
+  third_party/tas/lib/tas/init.c
+  third_party/tas/lib/tas/kernel.c
+  third_party/tas/lib/utils/rng.c
+  third_party/tas/lib/utils/timeout.c
+  third_party/tas/lib/utils/utils.c
+  third_party/tas/tas/config.c
+  third_party/tas/tas/fast/fast_appctx.c
+  third_party/tas/tas/fast/fast_flows.c
+  third_party/tas/tas/fast/fast_kernel.c
+  third_party/tas/tas/fast/fastemu.c
+  third_party/tas/tas/fast/network.c
+  third_party/tas/tas/fast/qman.c
+  third_party/tas/tas/fast/tests/tcp_common.c
+  third_party/tas/tas/fast/trace.c
+  third_party/tas/tas/shm.c
+  third_party/tas/tas/slow/appif.c
+  third_party/tas/tas/slow/appif_ctx.c
+  third_party/tas/tas/slow/arp.c
+  third_party/tas/tas/slow/cc.c
+  third_party/tas/tas/slow/kernel.c
+  third_party/tas/tas/slow/kni.c
+  third_party/tas/tas/slow/nicif.c
+  third_party/tas/tas/slow/packetmem.c
+  third_party/tas/tas/slow/routing.c
+  third_party/tas/tas/slow/tcp.c
+  third_party/tas/tas/tas.c
+)
+
+if(WIN32 AND MSVC)
+  set_target_properties(tas PROPERTIES COMPILE_PDB_NAME "tas"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+  if (gRPC_INSTALL)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tas.pdb
+      DESTINATION ${gRPC_INSTALL_LIBDIR} OPTIONAL
+    )
+  endif()
+endif()
+
+
+target_include_directories(tas
+  PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${_gRPC_SSL_INCLUDE_DIR}
+  PRIVATE ${_gRPC_PROTOBUF_INCLUDE_DIR}
+  PRIVATE ${_gRPC_ZLIB_INCLUDE_DIR}
+  PRIVATE ${_gRPC_BENCHMARK_INCLUDE_DIR}
+  PRIVATE ${_gRPC_CARES_INCLUDE_DIR}
+  PRIVATE ${_gRPC_GFLAGS_INCLUDE_DIR}
+  PRIVATE ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+  PRIVATE ${_gRPC_NANOPB_INCLUDE_DIR}
+)
+  # avoid dependency on libstdc++
+  if (_gRPC_CORE_NOSTDCXX_FLAGS)
+    set_target_properties(tas PROPERTIES LINKER_LANGUAGE C)
+    # only use the flags for C++ source files
+    target_compile_options(tas PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${_gRPC_CORE_NOSTDCXX_FLAGS}>)
+  endif()
+target_link_libraries(tas
+  ${_gRPC_SSL_LIBRARIES}
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+)
+
+
+endif (gRPC_BUILD_TESTS)
+if (gRPC_BUILD_TESTS)
+
+add_library(tas_sockets
+  third_party/tas/lib/sockets/interpose.c
+  third_party/tas/lib/sockets/control.c
+  third_party/tas/lib/sockets/context.c
+  third_party/tas/lib/sockets/epoll.c
+  third_party/tas/lib/sockets/manage_fd.c
+  third_party/tas/lib/sockets/libc.c
+  third_party/tas/lib/sockets/transfer.c
+  third_party/tas/lib/utils/rng.c
+  third_party/tas/lib/utils/timeout.c
+  third_party/tas/lib/utils/utils.c
+  third_party/tas/tas/config.c
+  third_party/tas/tas/fast/fast_appctx.c
+  third_party/tas/tas/fast/fast_flows.c
+  third_party/tas/tas/fast/fast_kernel.c
+  third_party/tas/tas/fast/fastemu.c
+  third_party/tas/tas/fast/network.c
+  third_party/tas/tas/fast/qman.c
+  third_party/tas/tas/fast/tests/tcp_common.c
+  third_party/tas/tas/fast/trace.c
+  third_party/tas/tas/shm.c
+  third_party/tas/tas/slow/appif.c
+  third_party/tas/tas/slow/appif_ctx.c
+  third_party/tas/tas/slow/arp.c
+  third_party/tas/tas/slow/cc.c
+  third_party/tas/tas/slow/kernel.c
+  third_party/tas/tas/slow/kni.c
+  third_party/tas/tas/slow/nicif.c
+  third_party/tas/tas/slow/packetmem.c
+  third_party/tas/tas/slow/routing.c
+  third_party/tas/tas/slow/tcp.c
+  third_party/tas/tas/tas.c
+)
+
+if(WIN32 AND MSVC)
+  set_target_properties(tas_sockets PROPERTIES COMPILE_PDB_NAME "tas_sockets"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  )
+  if (gRPC_INSTALL)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tas_sockets.pdb
+      DESTINATION ${gRPC_INSTALL_LIBDIR} OPTIONAL
+    )
+  endif()
+endif()
+
+
+target_include_directories(tas_sockets
+  PUBLIC $<INSTALL_INTERFACE:${gRPC_INSTALL_INCLUDEDIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE ${_gRPC_SSL_INCLUDE_DIR}
+  PRIVATE ${_gRPC_PROTOBUF_INCLUDE_DIR}
+  PRIVATE ${_gRPC_ZLIB_INCLUDE_DIR}
+  PRIVATE ${_gRPC_BENCHMARK_INCLUDE_DIR}
+  PRIVATE ${_gRPC_CARES_INCLUDE_DIR}
+  PRIVATE ${_gRPC_GFLAGS_INCLUDE_DIR}
+  PRIVATE ${_gRPC_ADDRESS_SORTING_INCLUDE_DIR}
+  PRIVATE ${_gRPC_NANOPB_INCLUDE_DIR}
+)
+  # avoid dependency on libstdc++
+  if (_gRPC_CORE_NOSTDCXX_FLAGS)
+    set_target_properties(tas_sockets PROPERTIES LINKER_LANGUAGE C)
+    # only use the flags for C++ source files
+    target_compile_options(tas_sockets PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${_gRPC_CORE_NOSTDCXX_FLAGS}>)
+  endif()
+target_link_libraries(tas_sockets
+  ${_gRPC_SSL_LIBRARIES}
+  ${_gRPC_ALLTARGETS_LIBRARIES}
+)
+
+
+endif (gRPC_BUILD_TESTS)
 if (gRPC_BUILD_TESTS)
 
 add_library(bad_client_test

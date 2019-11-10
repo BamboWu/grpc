@@ -1182,6 +1182,14 @@ filegroups:
   - src/core/ext/transport/inproc/inproc_transport.h
   uses:
   - grpc_base_headers
+- name: grpc_transport_tas
+  src:
+  - src/core/ext/transport/tas/tas.cc
+  deps:
+  - tas
+  - tas_sockets
+  uses:
+  - grpc_base
 - name: grpc_workaround_cronet_compression_filter
   headers:
   - src/core/ext/filters/workarounds/workaround_cronet_compression_filter.h
@@ -1637,6 +1645,7 @@ libs:
   dll: true
   filegroups:
   - grpc_base
+  - grpc_transport_tas
   - grpc_transport_chttp2_server_secure
   - grpc_transport_chttp2_client_secure
   - grpc_transport_chttp2_server_insecure
@@ -6188,6 +6197,9 @@ defaults:
     LDFLAGS: -g
   protobuf:
     CXXFLAGS: -Wno-unused-variable
+  tas:
+    CFLAGS: -g -Wall -Wextra -Werror
+    LDFLAGS: -g
   upb:
     CFLAGS: -Wno-sign-conversion -Wno-shadow -Wno-conversion -Wno-implicit-fallthrough
       -Wno-sign-compare -Wno-missing-field-initializers

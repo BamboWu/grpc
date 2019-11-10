@@ -444,6 +444,8 @@
   ZLIB_CHECK_CMD = $(PKG_CONFIG) --exists zlib
   PROTOBUF_CHECK_CMD = $(PKG_CONFIG) --atleast-version=3.5.0 protobuf
   CARES_CHECK_CMD = $(PKG_CONFIG) --atleast-version=1.11.0 libcares
+  TAS_CHECK_CMD = $(PKG_CONFIG) --exists tas
+  TAS_SOCKETS_CHECK_CMD = $(PKG_CONFIG) --exists tas_sockets
   else # HAS_PKG_CONFIG
 
   ifeq ($(SYSTEM),MINGW32)
@@ -494,12 +496,22 @@
   ifeq ($(HAS_SYSTEM_CARES),true)
   CACHE_MK += HAS_SYSTEM_CARES = true,
   endif
+  HAS_SYSTEM_TAS ?=  $(shell $(TAS_CHECK_CMD) 2> /dev/null && echo true || echo false)
+  ifeq ($(HAS_SYSTEM_TAS),true)
+  CACHE_MK += HAS_SYSTEM_TAS = true,
+  endif
+  HAS_SYSTEM_TAS_SOCKETS ?=  $(shell $(TAS_SOCKETS_CHECK_CMD) 2> /dev/null && echo true || echo false)
+  ifeq ($(HAS_SYSTEM_TAS_SOCKETS),true)
+  CACHE_MK += HAS_SYSTEM_TAS_SOCKETS = true,
+  endif
   else
   # override system libraries if the config requires a custom compiled library
   HAS_SYSTEM_OPENSSL_ALPN = false
   HAS_SYSTEM_ZLIB = false
   HAS_SYSTEM_PROTOBUF = false
   HAS_SYSTEM_CARES = false
+  HAS_SYSTEM_TAS = false
+  HAS_SYSTEM_TAS_SOCKETS = false
   endif
 
   HAS_PROTOC ?= $(shell $(PROTOC_CHECK_CMD) 2> /dev/null && echo true || echo false)
@@ -564,6 +576,18 @@
   HAS_EMBEDDED_CARES = true
   endif
 
+  ifeq ($(wildcard third_party/tas/lib/tas/include/tas_ll.h),)
+  HAS_EMBEDDED_TAS = false
+  else
+  HAS_EMBEDDED_TAS = true
+  endif
+
+  ifeq ($(wildcard third_party/tas/lib/sockets/include/tas_sockets.h),)
+  HAS_EMBEDDED_TAS_SOCKETS = false
+  else
+  HAS_EMBEDDED_TAS_SOCKETS = true
+  endif
+
   PC_REQUIRES_GRPC =
   PC_LIBS_GRPC =
 
@@ -608,6 +632,28 @@
   EMBED_CARES ?= false
   endif
 
+  ifeq ($(HAS_SYSTEM_TAS),false)
+  ifeq ($(HAS_EMBEDDED_TAS), true)
+  EMBED_TAS ?= true
+  else
+  DEP_MISSING += tas
+  EMBED_TAS ?= broken
+  endif
+  else
+  EMBED_TAS ?= false
+  endif
+
+  ifeq ($(HAS_SYSTEM_TAS_SOCKETS),false)
+  ifeq ($(HAS_EMBEDDED_TAS_SOCKETS), true)
+  EMBED_TAS_SOCKETS ?= true
+  else
+  DEP_MISSING += tas
+  EMBED_TAS_SOCKETS ?= broken
+  endif
+  else
+  EMBED_TAS_SOCKETS ?= false
+  endif
+
   ADDRESS_SORTING_DEP = $(LIBDIR)/$(CONFIG)/libaddress_sorting.a
   ADDRESS_SORTING_MERGE_OBJS = $(LIBADDRESS_SORTING_OBJS)
   ADDRESS_SORTING_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libaddress_sorting.a
@@ -627,6 +673,40 @@
   else
   PC_LIBS_GRPC += -lcares
   LIBS += cares
+  endif
+  endif
+
+  ifeq ($(EMBED_TAS),true)
+  TAS_DEP = $(LIBDIR)/$(CONFIG)/libtas.a
+  TAS_MERGE_OBJS = $(LIBTAS_OBJS)
+  TAS_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libtas.a
+  CPPFLAGS := -Ithird_party/tas/lib/tas/include $(CPPFLAGS)
+  else
+  ifeq ($(HAS_PKG_CONFIG),true)
+  PC_REQUIRES_GRPC += libtas
+  CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libtas)
+  LDFLAGS += $(shell $(PKG_CONFIG) --libs-only-L libtas)
+  LIBS += $(patsubst -l%,%,$(shell $(PKG_CONFIG) --libs-only-l libtas))
+  else
+  PC_LIBS_GRPC += -ltas
+  LIBS += tas
+  endif
+  endif
+
+  ifeq ($(EMBED_TAS_SOCKETS),true)
+  TAS_SOCKETS_DEP = $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+  TAS_SOCKETS_MERGE_OBJS = $(LIBTAS_OBJS)
+  TAS_SOCKETS_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+  CPPFLAGS := -Ithird_party/tas/lib/sockets/include $(CPPFLAGS)
+  else
+  ifeq ($(HAS_PKG_CONFIG),true)
+  PC_REQUIRES_GRPC += libtas_sockets
+  CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libtas_sockets)
+  LDFLAGS += $(shell $(PKG_CONFIG) --libs-only-L libtas_sockets)
+  LIBS += $(patsubst -l%,%,$(shell $(PKG_CONFIG) --libs-only-l libtas_sockets))
+  else
+  PC_LIBS_GRPC += -ltas_sockets
+  LIBS += tas_sockets
   endif
   endif
 
@@ -1550,7 +1630,7 @@
 
   % endif
   $(LIBDIR)/$(CONFIG)/lib${lib.name}.a: \
-  % if lib.name not in ['z', 'ares', 'address_sorting']:
+  % if lib.name not in ['z', 'ares', 'address_sorting', 'tas']:
   $(ZLIB_DEP) \
   $(CARES_DEP) \
   $(ADDRESS_SORTING_DEP) \

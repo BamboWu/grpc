@@ -708,6 +708,7 @@ Pod::Spec.new do |s|
                       'src/core/lib/transport/transport_op_string.cc',
                       'src/core/lib/uri/uri_parser.cc',
                       'src/core/lib/debug/trace.cc',
+                      'src/core/ext/transport/tas/tas.cc',
                       'src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc',
                       'src/core/ext/transport/chttp2/transport/bin_decoder.cc',
                       'src/core/ext/transport/chttp2/transport/bin_encoder.cc',

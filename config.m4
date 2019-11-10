@@ -243,6 +243,7 @@ if test "$PHP_GRPC" != "no"; then
     src/core/lib/transport/transport_op_string.cc \
     src/core/lib/uri/uri_parser.cc \
     src/core/lib/debug/trace.cc \
+    src/core/ext/transport/tas/tas.cc \
     src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc \
     src/core/ext/transport/chttp2/transport/bin_decoder.cc \
     src/core/ext/transport/chttp2/transport/bin_encoder.cc \
@@ -721,6 +722,7 @@ if test "$PHP_GRPC" != "no"; then
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/ext/transport/chttp2/server/secure)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/ext/transport/chttp2/transport)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/ext/transport/inproc)
+  PHP_ADD_BUILD_DIR($ext_builddir/src/core/ext/transport/tas)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/lib/avl)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/lib/backoff)
   PHP_ADD_BUILD_DIR($ext_builddir/src/core/lib/channel)

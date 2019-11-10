@@ -642,6 +642,7 @@ Gem::Specification.new do |s|
   s.files += %w( src/core/lib/transport/transport_op_string.cc )
   s.files += %w( src/core/lib/uri/uri_parser.cc )
   s.files += %w( src/core/lib/debug/trace.cc )
+  s.files += %w( src/core/ext/transport/tas/tas.cc )
   s.files += %w( src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc )
   s.files += %w( src/core/ext/transport/chttp2/transport/bin_decoder.cc )
   s.files += %w( src/core/ext/transport/chttp2/transport/bin_encoder.cc )

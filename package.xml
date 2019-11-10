@@ -647,6 +647,7 @@
     <file baseinstalldir="/" name="src/core/lib/transport/transport_op_string.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/uri/uri_parser.cc" role="src" />
     <file baseinstalldir="/" name="src/core/lib/debug/trace.cc" role="src" />
+    <file baseinstalldir="/" name="src/core/ext/transport/tas/tas.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/transport/bin_decoder.cc" role="src" />
     <file baseinstalldir="/" name="src/core/ext/transport/chttp2/transport/bin_encoder.cc" role="src" />

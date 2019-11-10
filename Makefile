@@ -544,6 +544,8 @@ OPENSSL_ALPN_CHECK_CMD = $(PKG_CONFIG) --atleast-version=1.0.2 openssl
 ZLIB_CHECK_CMD = $(PKG_CONFIG) --exists zlib
 PROTOBUF_CHECK_CMD = $(PKG_CONFIG) --atleast-version=3.5.0 protobuf
 CARES_CHECK_CMD = $(PKG_CONFIG) --atleast-version=1.11.0 libcares
+TAS_CHECK_CMD = $(PKG_CONFIG) --exists tas
+TAS_SOCKETS_CHECK_CMD = $(PKG_CONFIG) --exists tas_sockets
 else # HAS_PKG_CONFIG
 
 ifeq ($(SYSTEM),MINGW32)
@@ -594,12 +596,22 @@ HAS_SYSTEM_CARES ?=  $(shell $(CARES_CHECK_CMD) 2> /dev/null && echo true || ech
 ifeq ($(HAS_SYSTEM_CARES),true)
 CACHE_MK += HAS_SYSTEM_CARES = true,
 endif
+HAS_SYSTEM_TAS ?=  $(shell $(TAS_CHECK_CMD) 2> /dev/null && echo true || echo false)
+ifeq ($(HAS_SYSTEM_TAS),true)
+CACHE_MK += HAS_SYSTEM_TAS = true,
+endif
+HAS_SYSTEM_TAS_SOCKETS ?=  $(shell $(TAS_SOCKETS_CHECK_CMD) 2> /dev/null && echo true || echo false)
+ifeq ($(HAS_SYSTEM_TAS_SOCKETS),true)
+CACHE_MK += HAS_SYSTEM_TAS_SOCKETS = true,
+endif
 else
 # override system libraries if the config requires a custom compiled library
 HAS_SYSTEM_OPENSSL_ALPN = false
 HAS_SYSTEM_ZLIB = false
 HAS_SYSTEM_PROTOBUF = false
 HAS_SYSTEM_CARES = false
+HAS_SYSTEM_TAS = false
+HAS_SYSTEM_TAS_SOCKETS = false
 endif
 
 HAS_PROTOC ?= $(shell $(PROTOC_CHECK_CMD) 2> /dev/null && echo true || echo false)
@@ -664,6 +676,18 @@ else
 HAS_EMBEDDED_CARES = true
 endif
 
+ifeq ($(wildcard third_party/tas/lib/tas/include/tas_ll.h),)
+HAS_EMBEDDED_TAS = false
+else
+HAS_EMBEDDED_TAS = true
+endif
+
+ifeq ($(wildcard third_party/tas/lib/sockets/include/tas_sockets.h),)
+HAS_EMBEDDED_TAS_SOCKETS = false
+else
+HAS_EMBEDDED_TAS_SOCKETS = true
+endif
+
 PC_REQUIRES_GRPC =
 PC_LIBS_GRPC =
 
@@ -708,6 +732,28 @@ else
 EMBED_CARES ?= false
 endif
 
+ifeq ($(HAS_SYSTEM_TAS),false)
+ifeq ($(HAS_EMBEDDED_TAS), true)
+EMBED_TAS ?= true
+else
+DEP_MISSING += tas
+EMBED_TAS ?= broken
+endif
+else
+EMBED_TAS ?= false
+endif
+
+ifeq ($(HAS_SYSTEM_TAS_SOCKETS),false)
+ifeq ($(HAS_EMBEDDED_TAS_SOCKETS), true)
+EMBED_TAS_SOCKETS ?= true
+else
+DEP_MISSING += tas
+EMBED_TAS_SOCKETS ?= broken
+endif
+else
+EMBED_TAS_SOCKETS ?= false
+endif
+
 ADDRESS_SORTING_DEP = $(LIBDIR)/$(CONFIG)/libaddress_sorting.a
 ADDRESS_SORTING_MERGE_OBJS = $(LIBADDRESS_SORTING_OBJS)
 ADDRESS_SORTING_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libaddress_sorting.a
@@ -727,6 +773,40 @@ LIBS += $(patsubst -l%,%,$(shell $(PKG_CONFIG) --libs-only-l libcares))
 else
 PC_LIBS_GRPC += -lcares
 LIBS += cares
+endif
+endif
+
+ifeq ($(EMBED_TAS),true)
+TAS_DEP = $(LIBDIR)/$(CONFIG)/libtas.a
+TAS_MERGE_OBJS = $(LIBTAS_OBJS)
+TAS_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libtas.a
+CPPFLAGS := -Ithird_party/tas/lib/tas/include $(CPPFLAGS)
+else
+ifeq ($(HAS_PKG_CONFIG),true)
+PC_REQUIRES_GRPC += libtas
+CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libtas)
+LDFLAGS += $(shell $(PKG_CONFIG) --libs-only-L libtas)
+LIBS += $(patsubst -l%,%,$(shell $(PKG_CONFIG) --libs-only-l libtas))
+else
+PC_LIBS_GRPC += -ltas
+LIBS += tas
+endif
+endif
+
+ifeq ($(EMBED_TAS_SOCKETS),true)
+TAS_SOCKETS_DEP = $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+TAS_SOCKETS_MERGE_OBJS = $(LIBTAS_OBJS)
+TAS_SOCKETS_MERGE_LIBS = $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+CPPFLAGS := -Ithird_party/tas/lib/sockets/include $(CPPFLAGS)
+else
+ifeq ($(HAS_PKG_CONFIG),true)
+PC_REQUIRES_GRPC += libtas_sockets
+CPPFLAGS += $(shell $(PKG_CONFIG) --cflags libtas_sockets)
+LDFLAGS += $(shell $(PKG_CONFIG) --libs-only-L libtas_sockets)
+LIBS += $(patsubst -l%,%,$(shell $(PKG_CONFIG) --libs-only-l libtas_sockets))
+else
+PC_LIBS_GRPC += -ltas_sockets
+LIBS += tas_sockets
 endif
 endif
 
@@ -1415,7 +1495,7 @@ plugins: $(PROTOC_PLUGINS)
 
 privatelibs: privatelibs_c privatelibs_cxx
 
-privatelibs_c:  $(LIBDIR)/$(CONFIG)/libalts_test_util.a $(LIBDIR)/$(CONFIG)/libcxxabi.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util_unsecure.a $(LIBDIR)/$(CONFIG)/libreconnect_server.a $(LIBDIR)/$(CONFIG)/libtest_tcp_server.a $(LIBDIR)/$(CONFIG)/libupb.a $(LIBDIR)/$(CONFIG)/libz.a $(LIBDIR)/$(CONFIG)/libares.a $(LIBDIR)/$(CONFIG)/libbad_ssl_test_server.a $(LIBDIR)/$(CONFIG)/libend2end_tests.a $(LIBDIR)/$(CONFIG)/libend2end_nosec_tests.a
+privatelibs_c:  $(LIBDIR)/$(CONFIG)/libalts_test_util.a $(LIBDIR)/$(CONFIG)/libcxxabi.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util.a $(LIBDIR)/$(CONFIG)/libgrpc_test_util_unsecure.a $(LIBDIR)/$(CONFIG)/libreconnect_server.a $(LIBDIR)/$(CONFIG)/libtest_tcp_server.a $(LIBDIR)/$(CONFIG)/libupb.a $(LIBDIR)/$(CONFIG)/libz.a $(LIBDIR)/$(CONFIG)/libares.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(LIBDIR)/$(CONFIG)/libbad_ssl_test_server.a $(LIBDIR)/$(CONFIG)/libend2end_tests.a $(LIBDIR)/$(CONFIG)/libend2end_nosec_tests.a
 pc_c: $(LIBDIR)/$(CONFIG)/pkgconfig/grpc.pc $(LIBDIR)/$(CONFIG)/pkgconfig/gpr.pc
 
 pc_c_unsecure: $(LIBDIR)/$(CONFIG)/pkgconfig/grpc_unsecure.pc $(LIBDIR)/$(CONFIG)/pkgconfig/gpr.pc
@@ -3663,6 +3743,7 @@ LIBGRPC_SRC = \
     src/core/lib/transport/transport_op_string.cc \
     src/core/lib/uri/uri_parser.cc \
     src/core/lib/debug/trace.cc \
+    src/core/ext/transport/tas/tas.cc \
     src/core/ext/transport/chttp2/server/secure/server_secure_chttp2.cc \
     src/core/ext/transport/chttp2/transport/bin_decoder.cc \
     src/core/ext/transport/chttp2/transport/bin_encoder.cc \
@@ -3909,18 +3990,18 @@ endif
 
 
 ifeq ($(SYSTEM),MINGW32)
-$(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBGRPC_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(LIBDIR)/$(CONFIG)/libgpr.a $(OPENSSL_DEP)
+$(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBGRPC_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(OPENSSL_DEP)
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
-	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,--output-def=$(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).def -Wl,--out-implib=$(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE)-dll.a -o $(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
+	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,--output-def=$(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).def -Wl,--out-implib=$(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE)-dll.a -o $(LIBDIR)/$(CONFIG)/grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
 else
-$(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBGRPC_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(LIBDIR)/$(CONFIG)/libgpr.a $(OPENSSL_DEP)
+$(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE): $(LIBGRPC_OBJS)  $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(OPENSSL_DEP)
 	$(E) "[LD]      Linking $@"
 	$(Q) mkdir -p `dirname $@`
 ifeq ($(SYSTEM),Darwin)
-	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -install_name $(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) -dynamiclib -o $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
+	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -install_name $(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) -dynamiclib -o $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
 else
-	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,-soname,libgrpc.so.7 -o $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
+	$(Q) $(LD) $(LDFLAGS) -L$(LIBDIR)/$(CONFIG) -shared -Wl,-soname,libgrpc.so.7 -o $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBGRPC_OBJS) $(LIBDIR)/$(CONFIG)/libgpr.a $(LIBDIR)/$(CONFIG)/libtas.a $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(OPENSSL_MERGE_LIBS) $(LDLIBS_SECURE) $(ZLIB_MERGE_LIBS) $(CARES_MERGE_LIBS) $(ADDRESS_SORTING_MERGE_LIBS) $(LDLIBS)
 	$(Q) ln -sf $(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).so.7
 	$(Q) ln -sf $(SHARED_PREFIX)grpc$(SHARED_VERSION_CORE).$(SHARED_EXT_CORE) $(LIBDIR)/$(CONFIG)/libgrpc$(SHARED_VERSION_CORE).so
 endif
@@ -8047,6 +8128,117 @@ endif
 
 ifneq ($(NO_DEPS),true)
 -include $(LIBARES_OBJS:.o=.dep)
+endif
+
+
+LIBTAS_SRC = \
+    third_party/tas/lib/tas/conn.c \
+    third_party/tas/lib/tas/connect.c \
+    third_party/tas/lib/tas/init.c \
+    third_party/tas/lib/tas/kernel.c \
+    third_party/tas/lib/utils/rng.c \
+    third_party/tas/lib/utils/timeout.c \
+    third_party/tas/lib/utils/utils.c \
+    third_party/tas/tas/config.c \
+    third_party/tas/tas/fast/fast_appctx.c \
+    third_party/tas/tas/fast/fast_flows.c \
+    third_party/tas/tas/fast/fast_kernel.c \
+    third_party/tas/tas/fast/fastemu.c \
+    third_party/tas/tas/fast/network.c \
+    third_party/tas/tas/fast/qman.c \
+    third_party/tas/tas/fast/tests/tcp_common.c \
+    third_party/tas/tas/fast/trace.c \
+    third_party/tas/tas/shm.c \
+    third_party/tas/tas/slow/appif.c \
+    third_party/tas/tas/slow/appif_ctx.c \
+    third_party/tas/tas/slow/arp.c \
+    third_party/tas/tas/slow/cc.c \
+    third_party/tas/tas/slow/kernel.c \
+    third_party/tas/tas/slow/kni.c \
+    third_party/tas/tas/slow/nicif.c \
+    third_party/tas/tas/slow/packetmem.c \
+    third_party/tas/tas/slow/routing.c \
+    third_party/tas/tas/slow/tcp.c \
+    third_party/tas/tas/tas.c \
+
+PUBLIC_HEADERS_C += \
+
+LIBTAS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBTAS_SRC))))
+
+$(LIBTAS_OBJS): LDFLAGS += -g
+$(LIBTAS_OBJS): CFLAGS += -g -Wall -Wextra -Werror
+
+$(LIBDIR)/$(CONFIG)/libtas.a:  $(LIBTAS_OBJS) 
+	$(E) "[AR]      Creating $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) rm -f $(LIBDIR)/$(CONFIG)/libtas.a
+	$(Q) $(AR) $(AROPTS) $(LIBDIR)/$(CONFIG)/libtas.a $(LIBTAS_OBJS) 
+ifeq ($(SYSTEM),Darwin)
+	$(Q) ranlib -no_warning_for_no_symbols $(LIBDIR)/$(CONFIG)/libtas.a
+endif
+
+
+
+
+ifneq ($(NO_DEPS),true)
+-include $(LIBTAS_OBJS:.o=.dep)
+endif
+
+
+LIBTAS_SOCKETS_SRC = \
+    third_party/tas/lib/sockets/interpose.c \
+    third_party/tas/lib/sockets/control.c \
+    third_party/tas/lib/sockets/context.c \
+    third_party/tas/lib/sockets/epoll.c \
+    third_party/tas/lib/sockets/manage_fd.c \
+    third_party/tas/lib/sockets/libc.c \
+    third_party/tas/lib/sockets/transfer.c \
+    third_party/tas/lib/utils/rng.c \
+    third_party/tas/lib/utils/timeout.c \
+    third_party/tas/lib/utils/utils.c \
+    third_party/tas/tas/config.c \
+    third_party/tas/tas/fast/fast_appctx.c \
+    third_party/tas/tas/fast/fast_flows.c \
+    third_party/tas/tas/fast/fast_kernel.c \
+    third_party/tas/tas/fast/fastemu.c \
+    third_party/tas/tas/fast/network.c \
+    third_party/tas/tas/fast/qman.c \
+    third_party/tas/tas/fast/tests/tcp_common.c \
+    third_party/tas/tas/fast/trace.c \
+    third_party/tas/tas/shm.c \
+    third_party/tas/tas/slow/appif.c \
+    third_party/tas/tas/slow/appif_ctx.c \
+    third_party/tas/tas/slow/arp.c \
+    third_party/tas/tas/slow/cc.c \
+    third_party/tas/tas/slow/kernel.c \
+    third_party/tas/tas/slow/kni.c \
+    third_party/tas/tas/slow/nicif.c \
+    third_party/tas/tas/slow/packetmem.c \
+    third_party/tas/tas/slow/routing.c \
+    third_party/tas/tas/slow/tcp.c \
+    third_party/tas/tas/tas.c \
+
+PUBLIC_HEADERS_C += \
+
+LIBTAS_SOCKETS_OBJS = $(addprefix $(OBJDIR)/$(CONFIG)/, $(addsuffix .o, $(basename $(LIBTAS_SOCKETS_SRC))))
+
+$(LIBTAS_SOCKETS_OBJS): LDFLAGS += -g
+$(LIBTAS_SOCKETS_OBJS): CFLAGS += -g -Wall -Wextra -Werror
+
+$(LIBDIR)/$(CONFIG)/libtas_sockets.a: $(ZLIB_DEP) $(CARES_DEP) $(ADDRESS_SORTING_DEP)  $(LIBTAS_SOCKETS_OBJS) 
+	$(E) "[AR]      Creating $@"
+	$(Q) mkdir -p `dirname $@`
+	$(Q) rm -f $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+	$(Q) $(AR) $(AROPTS) $(LIBDIR)/$(CONFIG)/libtas_sockets.a $(LIBTAS_SOCKETS_OBJS) 
+ifeq ($(SYSTEM),Darwin)
+	$(Q) ranlib -no_warning_for_no_symbols $(LIBDIR)/$(CONFIG)/libtas_sockets.a
+endif
+
+
+
+
+ifneq ($(NO_DEPS),true)
+-include $(LIBTAS_SOCKETS_OBJS:.o=.dep)
 endif
 
 
@@ -22375,6 +22567,7 @@ src/core/ext/transport/cronet/client/secure/cronet_channel_create.cc: $(OPENSSL_
 src/core/ext/transport/cronet/plugin_registry/grpc_cronet_plugin_registry.cc: $(OPENSSL_DEP)
 src/core/ext/transport/cronet/transport/cronet_api_dummy.cc: $(OPENSSL_DEP)
 src/core/ext/transport/cronet/transport/cronet_transport.cc: $(OPENSSL_DEP)
+src/core/ext/transport/tas/tas.cc: $(OPENSSL_DEP)
 src/core/lib/http/httpcli_security_connector.cc: $(OPENSSL_DEP)
 src/core/lib/security/context/security_context.cc: $(OPENSSL_DEP)
 src/core/lib/security/credentials/alts/alts_credentials.cc: $(OPENSSL_DEP)

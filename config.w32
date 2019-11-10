@@ -218,6 +218,7 @@ if (PHP_GRPC != "no") {
     "src\\core\\lib\\transport\\transport_op_string.cc " +
     "src\\core\\lib\\uri\\uri_parser.cc " +
     "src\\core\\lib\\debug\\trace.cc " +
+    "src\\core\\ext\\transport\\tas\\tas.cc " +
     "src\\core\\ext\\transport\\chttp2\\server\\secure\\server_secure_chttp2.cc " +
     "src\\core\\ext\\transport\\chttp2\\transport\\bin_decoder.cc " +
     "src\\core\\ext\\transport\\chttp2\\transport\\bin_encoder.cc " +
@@ -733,6 +734,7 @@ if (PHP_GRPC != "no") {
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\ext\\transport\\chttp2\\server\\secure");
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\ext\\transport\\chttp2\\transport");
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\ext\\transport\\inproc");
+  FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\ext\\transport\\tas");
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\lib");
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\lib\\avl");
   FSO.CreateFolder(base_dir+"\\ext\\grpc\\src\\core\\lib\\backoff");

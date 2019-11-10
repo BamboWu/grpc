@@ -6720,7 +6720,10 @@
       "grpc_transport_chttp2_server_insecure", 
       "grpc_transport_chttp2_server_secure", 
       "grpc_transport_inproc", 
-      "grpc_workaround_cronet_compression_filter"
+      "grpc_transport_tas", 
+      "grpc_workaround_cronet_compression_filter", 
+      "tas", 
+      "tas_sockets"
     ], 
     "headers": [], 
     "is_filegroup": false, 
@@ -7873,6 +7876,78 @@
     "is_filegroup": false, 
     "language": "c", 
     "name": "ares", 
+    "src": [], 
+    "third_party": false, 
+    "type": "lib"
+  }, 
+  {
+    "deps": [], 
+    "headers": [
+      "third_party/tas/doc/index.h", 
+      "third_party/tas/include/kernel_appif.h", 
+      "third_party/tas/include/packet_defs.h", 
+      "third_party/tas/include/tas_memif.h", 
+      "third_party/tas/include/tas_trace.h", 
+      "third_party/tas/include/utils.h", 
+      "third_party/tas/include/utils_circ.h", 
+      "third_party/tas/include/utils_nbqueue.h", 
+      "third_party/tas/include/utils_rng.h", 
+      "third_party/tas/include/utils_sync.h", 
+      "third_party/tas/include/utils_timeout.h", 
+      "third_party/tas/lib/tas/include/tas_ll.h", 
+      "third_party/tas/lib/tas/include/tas_ll_connect.h", 
+      "third_party/tas/lib/tas/internal.h", 
+      "third_party/tas/tas/fast/dma.h", 
+      "third_party/tas/tas/fast/fastemu.h", 
+      "third_party/tas/tas/fast/internal.h", 
+      "third_party/tas/tas/fast/network.h", 
+      "third_party/tas/tas/fast/tcp_common.h", 
+      "third_party/tas/tas/include/config.h", 
+      "third_party/tas/tas/include/fastpath.h", 
+      "third_party/tas/tas/include/tas.h", 
+      "third_party/tas/tas/slow/appif.h", 
+      "third_party/tas/tas/slow/internal.h"
+    ], 
+    "is_filegroup": false, 
+    "language": "c", 
+    "name": "tas", 
+    "src": [], 
+    "third_party": false, 
+    "type": "lib"
+  }, 
+  {
+    "deps": [], 
+    "headers": [
+      "third_party/tas/doc/index.h", 
+      "third_party/tas/include/kernel_appif.h", 
+      "third_party/tas/include/packet_defs.h", 
+      "third_party/tas/include/tas_memif.h", 
+      "third_party/tas/include/tas_trace.h", 
+      "third_party/tas/include/utils.h", 
+      "third_party/tas/include/utils_circ.h", 
+      "third_party/tas/include/utils_nbqueue.h", 
+      "third_party/tas/include/utils_rng.h", 
+      "third_party/tas/include/utils_sync.h", 
+      "third_party/tas/include/utils_timeout.h", 
+      "third_party/tas/lib/sockets/include/tas_sockets.h", 
+      "third_party/tas/lib/sockets/internal.h", 
+      "third_party/tas/lib/tas/include/tas_ll.h", 
+      "third_party/tas/lib/tas/include/tas_ll_connect.h", 
+      "third_party/tas/lib/tas/internal.h", 
+      "third_party/tas/tas/fast/dma.h", 
+      "third_party/tas/tas/fast/fastemu.h", 
+      "third_party/tas/tas/fast/internal.h", 
+      "third_party/tas/tas/fast/network.h", 
+      "third_party/tas/tas/fast/tcp_common.h", 
+      "third_party/tas/tas/include/config.h", 
+      "third_party/tas/tas/include/fastpath.h", 
+      "third_party/tas/tas/include/tas.h", 
+      "third_party/tas/tas/slow/appif.h", 
+      "third_party/tas/tas/slow/internal.h"
+    ], 
+    "is_filegroup": false, 
+    "language": "c", 
+    "name": "tas_sockets", 
     "src": [], 
     "third_party": false, 
     "type": "lib"
@@ -10174,6 +10249,23 @@
     "name": "grpc_transport_inproc_headers", 
     "src": [
       "src/core/ext/transport/inproc/inproc_transport.h"
+    ], 
+    "third_party": false, 
+    "type": "filegroup"
+  }, 
+  {
+    "deps": [
+      "gpr", 
+      "grpc_base", 
+      "tas", 
+      "tas_sockets"
+    ], 
+    "headers": [], 
+    "is_filegroup": true, 
+    "language": "c", 
+    "name": "grpc_transport_tas", 
+    "src": [
+      "src/core/ext/transport/tas/tas.cc"
     ], 
     "third_party": false, 
     "type": "filegroup"
